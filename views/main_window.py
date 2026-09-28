@@ -25,6 +25,9 @@ from utils.exportar import (
     generar_certificado_prosecucion_primaria_docx,
     generar_buena_conducta_docx,
     generar_constancia_prosecucion_inicial_docx,
+    generar_constancia_inscripcion_docx,
+    generar_constancia_aceptacion_docx,
+    generar_constancia_retiro_docx,
     generar_listado_colaboracion_seccion
 )
 from utils.backup import BackupManager
@@ -298,7 +301,9 @@ class MainWindow(QMainWindow, UiMainWindowBase):
             "Constancia de estudios",
             "Constancia de estudios (DOCX)",
             "Constancia de inscripción",
+            "Constancia de inscripción (DOCX)",
             "Constancia de aceptación",
+            "Constancia de aceptación (DOCX)",
             "Constancia de buena conducta",
             "Constancia de buena conducta (DOCX)",
             "Constancia de buena conducta (retirado)",
@@ -309,6 +314,7 @@ class MainWindow(QMainWindow, UiMainWindowBase):
             "Certif. promoción 6to a Secundaria",
             "Certif. promoción 6to a Secundaria (DOCX)",
             "Constancia de retiro (normal)",
+            "Constancia de retiro (normal) (DOCX)",
             "Constancia de retiro (grado anterior)",
             "Historial académico",
             "Historial de notas",
@@ -1143,8 +1149,14 @@ class MainWindow(QMainWindow, UiMainWindowBase):
                 elif constancia == "Constancia de inscripción":
                     archivo = generar_constancia_inscripcion(estudiante, institucion)
 
+                elif constancia == "Constancia de inscripción (DOCX)":
+                    archivo = generar_constancia_inscripcion_docx(estudiante, institucion)
+
                 elif constancia == "Constancia de aceptación":
                     archivo = generar_constancia_aceptacion(institucion ,self.anio_escolar)
+
+                elif constancia == "Constancia de aceptación (DOCX)":
+                    archivo = generar_constancia_aceptacion_docx(institucion, self.anio_escolar)
 
                 elif constancia == "Constancia de buena conducta":
                     archivo = generar_buena_conducta(estudiante, institucion, self.anio_escolar)
@@ -1352,6 +1364,15 @@ class MainWindow(QMainWindow, UiMainWindowBase):
                         return
                     motivo_retiro = datos_bd.get("motivo_retiro")
                     archivo = generar_constancia_retiro(estudiante, institucion, self.anio_escolar, motivo_retiro)
+
+                elif constancia == "Constancia de retiro (normal) (DOCX)":
+                    if datos_bd.get("estado", 1) == 1:
+                        crear_msgbox(self, "Estudiante activo",
+                                     "La constancia de retiro solo se puede generar para estudiantes retirados (inactivos).",
+                                     QMessageBox.Icon.Warning).exec()
+                        return
+                    motivo_retiro = datos_bd.get("motivo_retiro")
+                    archivo = generar_constancia_retiro_docx(estudiante, institucion, self.anio_escolar, motivo_retiro)
 
                 elif constancia == "Constancia de retiro (grado anterior)":
                     # Solo para estudiantes retirados

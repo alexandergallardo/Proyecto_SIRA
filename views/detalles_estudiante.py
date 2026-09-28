@@ -19,6 +19,8 @@ from utils.exportar import (
     generar_constancia_inscripcion, generar_constancia_prosecucion_inicial,
     generar_constancia_prosecucion_inicial_docx,
     generar_constancia_aceptacion,
+    generar_constancia_inscripcion_docx, generar_constancia_aceptacion_docx,
+    generar_constancia_retiro_docx,
     generar_buena_conducta_retirado,
     generar_constancia_retiro, generar_historial_estudiante_pdf,
     generar_constancia_retiro_retirado,
@@ -136,7 +138,9 @@ class DetallesEstudiante(QDialog, Ui_ficha_estu):
         menu_exportar_estu.addAction("Constancia de buena conducta (DOCX)", self.exportar_buena_conducta_docx)
         menu_exportar_estu.addAction("Constancia de buena conducta (retirado)", self.exportar_buena_conducta_retirado)
         menu_exportar_estu.addAction("Constancia de inscripción", self.exportar_constancia_inscripcion)
+        menu_exportar_estu.addAction("Constancia de inscripción (DOCX)", self.exportar_constancia_inscripcion_docx)
         menu_exportar_estu.addAction("Constancia de aceptación", self.exportar_constancia_aceptacion)
+        menu_exportar_estu.addAction("Constancia de aceptación (DOCX)", self.exportar_constancia_aceptacion_docx)
         menu_exportar_estu.addAction("Constancia prosecución Educación Inicial", 
                                      self.exportar_constancia_prosecucion_inicial)
         menu_exportar_estu.addAction("Constancia prosecución Educación Inicial (DOCX)", 
@@ -149,6 +153,7 @@ class DetallesEstudiante(QDialog, Ui_ficha_estu):
         menu_exportar_estu.addAction("Certificado promoción 6to a Secundaria (DOCX)",
                                       self.exportar_certificado_promocion_sexto_docx)
         menu_exportar_estu.addAction("Constancia de retiro (normal)", self.exportar_constancia_retiro)
+        menu_exportar_estu.addAction("Constancia de retiro (normal) (DOCX)", self.exportar_constancia_retiro_docx)
         menu_exportar_estu.addAction("Constancia de retiro (grado anterior)", self.exportar_constancia_retiro_retirado)
         menu_exportar_estu.addSeparator()
         menu_exportar_estu.addAction("Exportar historial académico (PDF)", self.exportar_historial_pdf)
@@ -208,16 +213,36 @@ class DetallesEstudiante(QDialog, Ui_ficha_estu):
         except Exception as e:
             crear_msgbox(self, "Error", f"No se pudo generar:\n{e}", QMessageBox.Icon.Critical).exec()
 
-    def exportar_constancia_aceptacion(self):
-        """Genera constancia de aceptación."""
+    def exportar_constancia_inscripcion_docx(self):
+        """Genera constancia de inscripción en formato DOCX."""
         try:
             estudiante = self.obtener_estudiante_actual_dict()
             institucion = InstitucionModel.obtener_por_id(1)
-            archivo = generar_constancia_aceptacion(estudiante, institucion, self.anio_escolar)
+            archivo = generar_constancia_inscripcion_docx(estudiante, institucion)
+            crear_msgbox(self, "Éxito", f"Constancia (DOCX) generada:\n{archivo}", QMessageBox.Icon.Information).exec()
+            abrir_archivo(archivo)
+        except Exception as e:
+            crear_msgbox(self, "Error", f"No se pudo generar (DOCX):\n{e}", QMessageBox.Icon.Critical).exec()
+
+    def exportar_constancia_aceptacion(self):
+        """Genera constancia de aceptación."""
+        try:
+            institucion = InstitucionModel.obtener_por_id(1)
+            archivo = generar_constancia_aceptacion(institucion, self.anio_escolar)
             crear_msgbox(self, "Éxito", f"Constancia generada:\n{archivo}", QMessageBox.Icon.Information).exec()
             abrir_archivo(archivo)
         except Exception as e:
             crear_msgbox(self, "Error", f"No se pudo generar:\n{e}", QMessageBox.Icon.Critical).exec()
+
+    def exportar_constancia_aceptacion_docx(self):
+        """Genera constancia de aceptación en formato DOCX."""
+        try:
+            institucion = InstitucionModel.obtener_por_id(1)
+            archivo = generar_constancia_aceptacion_docx(institucion, self.anio_escolar)
+            crear_msgbox(self, "Éxito", f"Constancia (DOCX) generada:\n{archivo}", QMessageBox.Icon.Information).exec()
+            abrir_archivo(archivo)
+        except Exception as e:
+            crear_msgbox(self, "Error", f"No se pudo generar (DOCX):\n{e}", QMessageBox.Icon.Critical).exec()
 
     def exportar_certificado_prosecucion_primaria(self):
         """Genera certificado prosecucion primaria"""
@@ -627,6 +652,51 @@ class DetallesEstudiante(QDialog, Ui_ficha_estu):
                 self,
                 "Error",
                 f"No se pudo generar la constancia: {e}",
+                QMessageBox.Icon.Critical
+            ).exec()
+
+    def exportar_constancia_retiro_docx(self):
+        """Genera constancia de retiro en formato DOCX."""
+        # Verificar si el estudiante está inactivo
+        if self.estudiante_actual.get("Estado", 1) == 1:
+            crear_msgbox(
+                self,
+                "Estudiante activo",
+                "La constancia de retiro solo se puede generar para estudiantes retirados (inactivos).\n\n"
+                "Use el switch para marcar al estudiante como retirado primero.",
+                QMessageBox.Icon.Warning
+            ).exec()
+            return
+
+        try:
+            # Obtener motivo de retiro desde la BD
+            datos = EstudianteModel.obtener_por_id(self.id_estudiante)
+            motivo_retiro = datos.get("motivo_retiro") if datos else None
+
+            estudiante_dict = self.obtener_estudiante_actual_dict()
+            institucion = InstitucionModel.obtener_por_id(1)
+
+            archivo = generar_constancia_retiro_docx(
+                estudiante_dict,
+                institucion,
+                self.anio_escolar,
+                motivo_retiro
+            )
+
+            crear_msgbox(
+                self,
+                "Éxito",
+                f"Constancia de retiro (DOCX) generada:\n{archivo}",
+                QMessageBox.Icon.Information
+            ).exec()
+
+            abrir_archivo(archivo)
+
+        except Exception as e:
+            crear_msgbox(
+                self,
+                "Error",
+                f"No se pudo generar la constancia (DOCX): {e}",
                 QMessageBox.Icon.Critical
             ).exec()
 
